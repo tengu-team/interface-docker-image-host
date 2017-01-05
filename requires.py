@@ -15,8 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-
-from charmhelpers.core import hookenv
+import yaml
 
 from charms.reactive import hook
 from charms.reactive import RelationBase
@@ -24,19 +23,27 @@ from charms.reactive import scopes
 
 
 class DockerImageHostRequires(RelationBase):
-    scope = scopes.UNIT
+    scope = scopes.GLOBAL
 
-    @hook('{requires:docker-image-host}-relation-changed')
+    @hook('{requires:docker-image-host}-relation-{joined,changed}')
     def changed(self):
         conv = self.conversation()
         conv.set_state('{relation_name}.available')
+        host = conv.get_remote('private-address')
+        host_ports = conv.get_remote('published_ports')
+        if host and host_ports:
+            conv.set_state('{relation_name}.ready')
+
 
     @hook('{requires:docker-image-host}-relation-{departed,broken}')
     def broken(self):
         conv = self.conversation()
         conv.remove_state('{relation_name}.available')
 
-    def send_configuration(self, name, image, ports=[], username=None, secret=None, daemon=True, interactive=True):
+    def send_configuration(self, name, image, ports=None, username=None,
+                           secret=None, daemon=True, interactive=True):#pylint:disable=R0913
+        if not ports:
+            ports = []
         conv = self.conversation()
         conv.set_remote('image', image)
         conv.set_remote('username', username)
@@ -45,10 +52,13 @@ class DockerImageHostRequires(RelationBase):
         conv.set_remote('daemon', daemon)
         conv.set_remote('interactive', interactive)
         conv.set_remote('ports', json.dumps(ports))
-        
+
+
+    def get_running_image(self):
+        conv = self.conversation()
         host = conv.get_remote('private-address')
         host_ports = conv.get_remote('published_ports')
-        conv.set_local('host', host)
-        conv.set_local('host_ports', host_ports)
-        return host, json.loads(host_ports)
-
+        if host and host_ports:
+            print("host_ports string: {}".format(host_ports))
+            return (host, yaml.load(host_ports))
+        return None

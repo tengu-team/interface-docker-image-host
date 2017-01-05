@@ -52,7 +52,6 @@ class DockerImageHostProvides(RelationBase):
                 })
         return images
 
-    def send_published_ports(ports):
+    def send_published_ports(self, ports):
         conv = self.conversation()
-        conv.set_remote('published_ports', ports)
-        
+        conv.set_remote('published_ports', json.dumps(ports))
