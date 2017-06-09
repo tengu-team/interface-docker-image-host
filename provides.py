@@ -36,14 +36,11 @@ class DockerImageHostProvides(RelationBase):
 
     @property
     def container_requests(self):
-        container_requests = {}
+        container_requests = []
         for conv in self.conversations():
             conv_con_reqs = yaml.safe_load(
-                conv.get_remote('container-requests', "{}"))
-            conv.set_local(
-                'uuids',
-                list(conv_con_reqs.keys()))
-            container_requests.update(conv_con_reqs)
+                conv.get_remote('container-requests', "[]"))
+            container_requests.extend(conv_con_reqs)
         return container_requests
 
     def send_running_containers(self, containers):
@@ -52,3 +49,4 @@ class DockerImageHostProvides(RelationBase):
         service. See https://tinyurl.com/hjwfwdn """
         for conv in self.conversations():
             conv.set_remote('running-containers', json.dumps(containers))
+

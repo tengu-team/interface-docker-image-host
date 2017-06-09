@@ -36,30 +36,25 @@ class DockerImageHostRequires(RelationBase):
         conv.remove_state('{relation_name}.available')
 
     def send_container_requests(self, container_requests):
-        """ container_requests: {
-            uuid: {
+        """ container_requests: [
+            {
                 image: <image>,
+                unit: <unit_name>,
+                username: <username>,
+                secret: <secret>,
                 #...
             },
             #...
-        }
+        ]
         """
         conv = self.conversation()
-        conv.set_local(
-            'uuids',
-            list(container_requests.keys()))
         conv.set_remote(
             'container-requests',
             json.dumps(container_requests))
 
     def get_running_containers(self):
         conv = self.conversation()
-        requested_uuids = conv.get_local('uuids', [])
         remote_containers = yaml.safe_load(
             conv.get_remote('running-containers', "{}"))
-        containers_to_return = []
-        for uuid in requested_uuids:
-            remote_container = remote_containers.get(uuid)
-            if remote_container:
-                containers_to_return.append(remote_container)
-        return containers_to_return
+        return remote_containers
+
